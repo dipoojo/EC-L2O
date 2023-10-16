@@ -20,7 +20,7 @@ n_iter_val = 0
 use_cuda = False
 
 def train_cr(ml_model, optimizer, writer, train_dataloader, demand_validation, 
-            num_epoch, switch_weight, min_cr, mtl_weight = 0.5, mute=True):
+            num_epoch, switch_weight, min_cr, mtl_weight = 0.5, mute=True, l_1=1, l_2=1, l_3=1):
 
     global n_iter, n_iter_val, use_cuda
     
@@ -39,7 +39,7 @@ def train_cr(ml_model, optimizer, writer, train_dataloader, demand_validation,
 
             # zero the parameter gradients
             optimizer.zero_grad()
-            action_ml = ml_model(demand, calib = False)
+            action_ml = ml_model(demand, calib = True)
             
             
             if mtl_weight == 1.0:
@@ -59,10 +59,10 @@ def train_cr(ml_model, optimizer, writer, train_dataloader, demand_validation,
 
             loss.backward()
             optimizer.step()
-
-            writer.add_scalar('Loss_train/no_calib', loss_ml.item(), n_iter)
-            writer.add_scalar('Loss_train/with_calib', loss_calib.item(), n_iter)
-            writer.add_scalar('Loss_train/overall', loss.item(), n_iter)
+#updated names to include scalars for easy tracking
+            writer.add_scalar(f'Loss_train/no_calib_{l_1}_{l_2}_{l_3}', loss_ml.item(), n_iter)
+            writer.add_scalar(f'Loss_train/with_calib_{l_1}_{l_2}_{l_3}', loss_calib.item(), n_iter)
+            writer.add_scalar(f'Loss_train/overall_{l_1}_{l_2}_{l_3}', loss.item(), n_iter)
             n_iter += 1
 
         writer.flush()
@@ -76,9 +76,9 @@ def train_cr(ml_model, optimizer, writer, train_dataloader, demand_validation,
 
             loss_val_ml = object_loss_cost(demand_validation, action_val_ml, c = switch_weight)
             loss_val_calib = object_loss_cost(demand_validation, action_val_calib, c = switch_weight)
-
-        writer.add_scalar('Loss_val/no_calib', loss_val_ml.item()/100, n_iter_val)
-        writer.add_scalar('Loss_val/with_calib', loss_val_calib.item()/100, n_iter_val)
+#updated names with lambdas for ease of tracking
+        writer.add_scalar(f'Loss_val/no_calib_{l_1}_{l_2}_{l_3}', loss_val_ml.item()/100, n_iter_val)
+        writer.add_scalar(f'Loss_val/with_calib_{l_1}_{l_2}_{l_3}', loss_val_calib.item()/100, n_iter_val)
         n_iter_val += 1
 
     writer.close()
@@ -134,7 +134,7 @@ def single_experiment(writer, w, l_1, l_2, l_3, mtl_weight, min_cr,
 
     for lr in lr_list:
         train_cr(lstm, optimizer, writer, train_dataloader, val_seq_tensor, 
-            epoch_num, w, min_cr, mtl_weight = mtl_weight, mute=mute)
+            epoch_num, w, min_cr, mtl_weight = mtl_weight, mute=mute, l_1=l_1, l_2=l_2, l_3=l_3) #added l_1, l_2, l_3 to call to track output
         optimizer.param_groups[0]["lr"] = lr
     
     pth_path = writer.get_logdir() + "lstm_unroll.pth"
