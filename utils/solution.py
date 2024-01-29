@@ -1,5 +1,6 @@
 import cvxpy as cp 
 import numpy as np
+import torch
 
 
 def objective_parameter_matrix(demand_seq, action_0, hit_weight = 1.0, switch_weight = 1.0):
@@ -51,5 +52,32 @@ def calculate_offline_optimal(demand_sequence, initial_action, hit_weight = 1.0,
     
     optimal_cost = prob.value
     
+    return action_optimal, optimal_cost
+
+
+
+def calculate_offline_optimal_dynamic(demand_sequence, initial_action, hit_weight = 1.0, switch_weight=1.0):
+    #action_optimal = []
+    optimal_cost = []
+    #print(demand_sequence.shape)
+    seq_len = demand_sequence.shape[0]
+    action_optimal = torch.zeros(demand_sequence.shape[0], demand_sequence.shape[1]+1, demand_sequence.shape[2])
+    for i in range(seq_len):
+        demand_sequence_in = demand_sequence[i,:,:]
+        #print(demand_sequence_in.shape)
+        initial_action_in = initial_action[i]
+        #print(initial_action_in.shape)
+        action_in, optimal_cost_in = calculate_offline_optimal(demand_sequence_in, initial_action_in, hit_weight = 1.0, switch_weight=1.0)
+        #action_optimal.append(action_in)
+        action_optimal[i,:,:] = torch.from_numpy(action_in).unsqueeze(1)
+        optimal_cost.append(optimal_cost_in)
+        
+        
+
+
+    
+    
+    
+    optimal_cost = torch.FloatTensor(optimal_cost).unsqueeze(1)
     return action_optimal, optimal_cost
     
